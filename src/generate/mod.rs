@@ -51,6 +51,16 @@ pub trait Generate {
         for (name, ty) in &pkg.manifest.types {
             match ty {
                 manifest::Type::Array(ty) => {
+                    self.declare_array_type(pkg, name, ty);
+                }
+                manifest::Type::Opaque(ty) => {
+                    self.declare_opaque_type(pkg, name, ty);
+                }
+            }
+        }
+        for (name, ty) in &pkg.manifest.types {
+            match ty {
+                manifest::Type::Array(ty) => {
                     self.array_type(pkg, config, name, ty)?;
                 }
                 manifest::Type::Opaque(ty) => {
@@ -69,7 +79,15 @@ pub trait Generate {
     /// Step 1: generate any setup code or low-level bindings
     fn bindings(&mut self, _pkg: &Package, _config: &mut Config) -> Result<(), Error>;
 
-    /// Step 2: generate code for array types
+    /// Step 2: forward-declare array types
+    fn declare_array_type(
+        &mut self,
+        pkg: &Package,
+        name: &str,
+        a: &manifest::ArrayType,
+    );
+
+    /// Step 3: generate code for array types
     fn array_type(
         &mut self,
         pkg: &Package,
@@ -77,6 +95,14 @@ pub trait Generate {
         name: &str,
         ty: &manifest::ArrayType,
     ) -> Result<(), Error>;
+
+    /// Step 2: forward-declare array types
+    fn declare_opaque_type(
+        &mut self,
+        pkg: &Package,
+        name: &str,
+        ty: &manifest::OpaqueType,
+    );
 
     /// Step 3: generate code for opaque types
     fn opaque_type(

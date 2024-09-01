@@ -329,6 +329,8 @@ impl Generate for OCaml {
         Ok(())
     }
 
+    fn declare_array_type(&mut self, _pkg: &Package, _name: &str, _a: &manifest::ArrayType) {}
+
     fn array_type(
         &mut self,
         _pkg: &Package,
@@ -370,6 +372,20 @@ impl Generate for OCaml {
         )?;
 
         Ok(())
+    }
+
+    fn declare_opaque_type(&mut self, _pkg: &Package, name: &str, ty: &manifest::OpaqueType) {
+        let futhark_name = convert_struct_name(&ty.ctype);
+        let mut ocaml_name = futhark_name
+            .strip_prefix("futhark_opaque_")
+            .unwrap()
+            .to_string();
+        if ocaml_name.chars().next().unwrap().is_numeric() || name.contains(' ') {
+            ocaml_name = format!("type_{ocaml_name}");
+        }
+        let module_name = first_uppercase(&ocaml_name);
+        self.typemap
+            .insert(ocaml_name.clone(), format!("{module_name}.t"));
     }
 
     fn opaque_type(

@@ -50,6 +50,28 @@ impl Rust {
 }
 
 impl Generate for Rust {
+    fn declare_array_type(
+        &mut self,
+        _pkg: &Package,
+        name: &str,
+        a: &manifest::ArrayType,
+    ) {
+        let elemtype = a.elemtype.to_str();
+        let rank = a.rank;
+
+        let futhark_type = convert_struct_name(&a.ctype).to_string();
+        let rust_type = format!("Array{}D{rank}", first_uppercase(elemtype));
+        let info = ArrayInfo {
+            futhark_type,
+            rust_type,
+            elem: elemtype.to_string(),
+        };
+
+        self.typemap
+            .insert(name.to_string(), info.futhark_type.clone());
+        self.typemap.insert(info.futhark_type, info.rust_type);
+    }
+
     fn array_type(
         &mut self,
         _pkg: &Package,
@@ -96,6 +118,22 @@ impl Generate for Rust {
             .insert(name.to_string(), info.futhark_type.clone());
         self.typemap.insert(info.futhark_type, info.rust_type);
         Ok(())
+    }
+
+    fn declare_opaque_type(
+        &mut self,
+        _pkg: &Package,
+        name: &str,
+        ty: &manifest::OpaqueType,
+    ) {
+        let futhark_type = convert_struct_name(&ty.ctype).to_string();
+        let mut rust_type = first_uppercase(futhark_type.strip_prefix("futhark_opaque_").unwrap());
+        if rust_type.chars().next().unwrap().is_numeric() || name.contains(' ') {
+            rust_type = format!("Type{}", rust_type);
+        }
+
+        self.typemap.insert(name.to_string(), futhark_type.clone());
+        self.typemap.insert(futhark_type, rust_type);
     }
 
     fn opaque_type(
